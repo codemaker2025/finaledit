@@ -5,7 +5,7 @@ import Home from "./components/Home/Home";
 import Dashboard from "./components/Home/Dashboard.jsx";
 import Navbar from "./components/navigation/Navbar";
 import EmpList from "./components/Home/EmpList.jsx";
-import ProtectedRoute from "./components/utils/ProtectedRoute.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 
 export default function App() {
   return (

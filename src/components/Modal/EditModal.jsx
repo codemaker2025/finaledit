@@ -2,17 +2,12 @@ import React, { useState } from "react";
 import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import axiosInstance from "../../api/axiosInstance";
 import InformInput from "../Informed/InformInput";
-import {
-  Form as Inform,
-  Radio,
-  RadioGroup,
-  Select,
-} from "informed";
+import { Form as Inform, Radio, RadioGroup, Select } from "informed";
 import useSWR from "swr";
 import useEmpValidation from "../utils/useEmpValidation";
 import { toast } from "react-toastify";
-import PhoneNumber from "../Informed/PhoneNumber";
 import inputFields from "../utils/inputFieldData.js";
+import PhoneNumber from "../Informed/PhoneNumber";
 
 const fetcher = async (url) => {
   const response = await axiosInstance.get(url);
@@ -27,53 +22,27 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
 
   const { validatePhone } = useEmpValidation();
 
-  const [file, setFile] = useState(null); // Start with null for new file uploads
+  const [file, setFile] = useState(null);
   const [fileError, setFileError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: departments } = useSWR("/api/v1/settings/departments", fetcher);
-  const { data: designations } = useSWR(
-    "/api/v1/settings/designations",
-    fetcher
-  );
-  const { data: employmentTypes } = useSWR(
-    "/api/v1/settings/employment-types",
-    fetcher
-  );
+  const { data: designations } = useSWR("/api/v1/settings/designations", fetcher);
+  const { data: employmentTypes } = useSWR("/api/v1/settings/employment-types", fetcher);
 
-  const departmentOptions =
-    departments?.data?.map((dept) => ({ value: dept.id, label: dept.name })) ||
-    [];
-  const designationOptions =
-    designations?.data?.map((desg) => ({
-      value: desg.id,
-      label: desg.title,
-    })) || [];
-  const employmentTypesOptions =
-    employmentTypes?.data?.map((emp) => ({
-      value: emp.id,
-      label: emp.title,
-    })) || [];
+  const departmentOptions = departments?.data?.map((dept) => ({ value: dept.id, label: dept.name })) || [];
+  const designationOptions = designations?.data?.map((desg) => ({ value: desg.id, label: desg.title })) || [];
+  const employmentTypesOptions = employmentTypes?.data?.map((emp) => ({ value: emp.id, label: emp.title })) || [];
 
   const handleFileChange = (event) => {
     const selectedFile = event.target.files[0];
 
     if (selectedFile) {
-      const allowedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/jpg",
-        "image/webp",
-      ];
+      const allowedTypes = ["image/jpeg", "image/png", "image/jpg", "image/webp"];
       const allowedExtensions = /\.(jpg|jpeg|png|webp)$/i;
 
-      if (
-        !allowedTypes.includes(selectedFile.type) ||
-        !allowedExtensions.test(selectedFile.name)
-      ) {
-        setFileError(
-          "File wont be uploaded. Only JPG, PNG, and WEBP images are allowed."
-        );
+      if (!allowedTypes.includes(selectedFile.type) || !allowedExtensions.test(selectedFile.name)) {
+        setFileError("Only JPG, PNG, and WEBP images are allowed.");
         setFile(null);
         return;
       }
@@ -84,20 +53,12 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
         return;
       }
 
-      // Ensure the file is an image before setting it to state
-      if (!selectedFile.type.startsWith("image/")) {
-        setFileError("Invalid file type. Only images are allowed.");
-        setFile(null);
-        return;
-      }
-
       setFileError("");
       setFile(selectedFile);
     }
   };
 
   const handleSubmit = async (values) => {
-    // Set loading state to true
     setIsSubmitting(true);
 
     const formData = new FormData();
@@ -110,19 +71,6 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
     formData.append("gender", genderReverseMap[values.values.gender]);
 
     if (file) {
-      const allowedTypes = [
-        "image/jpeg",
-        "image/png",
-        "image/jpg",
-        "image/webp",
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error(
-          "Invalid file type. Only JPG, PNG, and WEBP images are allowed."
-        );
-        setIsSubmitting(false);
-        return;
-      }
       formData.append("profile_picture", file);
     }
 
@@ -136,14 +84,10 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
       setIsOpen(false);
     } catch (error) {
       toast.error("Form Invalid!");
-      console.error("Update failed:", error);
     } finally {
-      // Reset loading state regardless of success or failure
       setIsSubmitting(false);
     }
   };
-
-  console.log(employee.profile_picture);
 
   return (
     <Modal show={isOpen} onHide={() => !isSubmitting && setIsOpen(false)}>
@@ -161,7 +105,6 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
         >
           {() => (
             <>
-              {/* Map through the input fields array */}
               {inputFields.map((field, index) => (
                 <InformInput
                   key={index}
@@ -176,6 +119,36 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
               ))}
 
               {/* Phone number field */}
+              <div className="mb-3">
+                <label className="form-label">Phone</label>
+                <input
+                  type="text"
+                  name="phone"
+                  className="form-control"
+                  placeholder="Enter your mobile number"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {/* Department Select field */}
+              <div className="mb-3">
+                <label className="form-label">Department</label>
+                <Select field="department_id" options={departmentOptions} className="form-select" disabled={isSubmitting} />
+              </div>
+
+              {/* Designation Select field */}
+              <div className="mb-3">
+                <label className="form-label">Designation</label>
+                <Select field="designation_id" options={designationOptions} className="form-select" disabled={isSubmitting} />
+              </div>
+
+              {/* Employment Type Select field */}
+              <div className="mb-3">
+                <label className="form-label">Employment Type</label>
+                <Select field="employment_type_id" options={employmentTypesOptions} className="form-select" disabled={isSubmitting} />
+              </div>
+
+              {/* Emergency Contact field */}
               <PhoneNumber
                 id="phoneNumber"
                 name="phone"
@@ -185,41 +158,6 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
                 formatter="+91##########"
                 disabled={isSubmitting}
               />
-
-              {/* Department Select field */}
-              <div className="mb-3">
-                <label className="form-label">Department</label>
-                <Select
-                  field="department_id"
-                  options={departmentOptions}
-                  className="form-select"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Designation Select field */}
-              <div className="mb-3">
-                <label className="form-label">Designation</label>
-                <Select
-                  field="designation_id"
-                  options={designationOptions}
-                  className="form-select"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Employment Type Select field */}
-              <div className="mb-3">
-                <label className="form-label">Employment Type</label>
-                <Select
-                  field="employment_type_id"
-                  options={employmentTypesOptions}
-                  className="form-select"
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              {/* Emergency Contact field */}
               <PhoneNumber
                 id="phoneNumber"
                 name="emergency_contact"
@@ -236,11 +174,7 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
                   <label className="form-label">Current Profile Picture</label>
                   <div>
                     <img
-                      src={
-                        typeof employee.profile_picture === "string"
-                          ? employee.profile_picture
-                          : URL.createObjectURL(employee.profile_picture)
-                      }
+                      src={typeof employee.profile_picture === "string" ? employee.profile_picture : URL.createObjectURL(employee.profile_picture)}
                       alt="Current profile"
                       style={{ maxWidth: "100%", maxHeight: "200px" }}
                     />
@@ -257,39 +191,29 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
                   isInvalid={!!fileError}
                   disabled={isSubmitting}
                 />
-                <Form.Control.Feedback type="invalid">
-                  {fileError}
-                </Form.Control.Feedback>
+                <Form.Control.Feedback type="invalid">{fileError}</Form.Control.Feedback>
               </Form.Group>
 
               {/* Gender RadioGroup */}
-              <RadioGroup field="gender" disabled={isSubmitting}>
-                <label>
-                  Male <Radio value="male" />
-                </label>
-                <label>
-                  Female <Radio value="female" />
-                </label>
-                <label>
-                  Other <Radio value="other" />
-                </label>
-              </RadioGroup>
+              <div className="mb-3">
+                <label className="form-label">Gender</label>
+                <RadioGroup field="gender" disabled={isSubmitting}>
+                  <label>
+                    <Radio value="male" /> Male
+                  </label>
+                  <label>
+                    <Radio value="female" /> Female
+                  </label>
+                  <label>
+                    <Radio value="other" /> Other
+                  </label>
+                </RadioGroup>
+              </div>
 
-              <Button
-                type="submit"
-                className="mt-3 w-100"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" className="mt-3 w-100" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
-                    <Spinner
-                      as="span"
-                      animation="border"
-                      size="sm"
-                      role="status"
-                      aria-hidden="true"
-                      className="me-2"
-                    />
+                    <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />
                     Saving Changes...
                   </>
                 ) : (
