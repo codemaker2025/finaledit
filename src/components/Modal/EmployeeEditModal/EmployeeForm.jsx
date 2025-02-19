@@ -76,7 +76,7 @@ export default function EmployeeForm({
             isSubmitting={isSubmitting}
           />
 
-          <FileUpload setFile={setFile} isSubmitting={isSubmitting} />
+          <FileUpload url={employee.profile_picture} setFile={setFile} isSubmitting={isSubmitting} />
           <GenderRadioGroup disabled={isSubmitting} />
           <Button type="submit" className="mt-3 w-100" disabled={isSubmitting}>
             {isSubmitting ? "Saving Changes..." : "Save Changes"}
