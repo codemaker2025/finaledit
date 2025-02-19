@@ -2,7 +2,7 @@ import  { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Card, Button, Spinner, Container, Row, Col } from "react-bootstrap";
 import useEmployeeSWR from "../../SWRhelpers/useEmployeeSWR";
-import EditModal from "../Modal/EditModal";
+import EditModal from "../Modal/EmployeeEditModal/EditModal";
 import BackButton from "../navigation/BackButton";
 
 export default function EmpList() {
