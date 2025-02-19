@@ -13,11 +13,20 @@ const usePagination = (url, pageSize) => {
   const initialPage = Math.max(parseInt(searchParams.get("page")) || 1, 1);
   const [page, setPage] = useState(initialPage);
 
-  const { data: apiData, error, isLoading } = useSWR(
+  const { data: apiData, error, isLoading, mutate } = useSWR(
     `${url}?length=${pageSize}&page=${page}`,
     fetcher,
     {
       keepPreviousData: true,
+      onErrorRetry: (err, key, config, revalidate, { retryCount }) => {
+        // Only retry if there are less than 3 attempts
+        if (retryCount >= 3) return;
+
+        // If the error is a network error or a server error, retry the request
+        if (err.status >= 500 || err.code === 'ERR_NETWORK') {
+          setTimeout(() => revalidate({ retryCount }), 5000); // Retry after 5 seconds
+        }
+      },
     }
   );
 
@@ -38,6 +47,7 @@ const usePagination = (url, pageSize) => {
     page,
     totalPages,
     handlePageChange,
+    mutate, // You can also use mutate to trigger manual revalidation
   };
 };
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Form, Modal } from "react-bootstrap";
+import { Button, Form, Modal, Spinner } from "react-bootstrap";
 import axiosInstance from "../../api/axiosInstance";
 import InformInput from "../Informed/InformInput";
 import {
@@ -7,12 +7,13 @@ import {
   Radio,
   RadioGroup,
   Select,
-  useFormApi,
 } from "informed";
 import useSWR from "swr";
-import useEmpValidation from "../../hooks/useEmpValidation";
+import useEmpValidation from "../utils/useEmpValidation";
 import { toast } from "react-toastify";
 import PhoneNumber from "../Informed/PhoneNumber";
+import inputFields from "../utils/inputFieldData.js";
+
 const fetcher = async (url) => {
   const response = await axiosInstance.get(url);
   return response.data;
@@ -24,28 +25,11 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
   const genderReverseMap = { male: 1, female: 2, other: 3 };
   const genderMap = { 1: "male", 2: "female", 3: "other" };
 
-  const {
-    validateName,
-    validateEmail,
-    validatePhone,
-    validateAddress,
-    validateCity,
-    validateState,
-    validateZipCode,
-    validateCountry,
-    validateBankAccount,
-    validateIfscCode,
-    validateEmergencyContact,
-    validateDOB,
-    validateEmployeeCode,
-    validateJoiningDate,
-    validateSalary,
-  } = useEmpValidation();
+  const { validatePhone } = useEmpValidation();
 
-  const formApi = useFormApi();
-
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState(null); // Start with null for new file uploads
   const [fileError, setFileError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: departments } = useSWR("/api/v1/settings/departments", fetcher);
   const { data: designations } = useSWR(
@@ -113,6 +97,9 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
   };
 
   const handleSubmit = async (values) => {
+    // Set loading state to true
+    setIsSubmitting(true);
+
     const formData = new FormData();
     formData.append("id", employee.id);
 
@@ -133,6 +120,7 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
         toast.error(
           "Invalid file type. Only JPG, PNG, and WEBP images are allowed."
         );
+        setIsSubmitting(false);
         return;
       }
       formData.append("profile_picture", file);
@@ -149,12 +137,17 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
     } catch (error) {
       toast.error("Form Invalid!");
       console.error("Update failed:", error);
+    } finally {
+      // Reset loading state regardless of success or failure
+      setIsSubmitting(false);
     }
   };
 
+  console.log(employee.profile_picture);
+
   return (
-    <Modal show={isOpen} onHide={() => setIsOpen(false)}>
-      <Modal.Header closeButton>
+    <Modal show={isOpen} onHide={() => !isSubmitting && setIsOpen(false)}>
+      <Modal.Header closeButton={!isSubmitting}>
         <Modal.Title>Edit Employee Details</Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -168,23 +161,21 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
         >
           {() => (
             <>
-              <InformInput
-                type="text"
-                label="Name"
-                name="name"
-                placeholder="Enter name"
-                validate={validateName}
-                required
-              />
-              <InformInput
-                type="email"
-                label="Email"
-                name="email"
-                placeholder="Enter email"
-                validate={validateEmail}
-                required
-              />
-             
+              {/* Map through the input fields array */}
+              {inputFields.map((field, index) => (
+                <InformInput
+                  key={index}
+                  type={field.type}
+                  label={field.label}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  validate={field.validate}
+                  required={field.required}
+                  disabled={isSubmitting}
+                />
+              ))}
+
+              {/* Phone number field */}
               <PhoneNumber
                 id="phoneNumber"
                 name="phone"
@@ -192,102 +183,43 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
                 placeholder="Enter your mobile number"
                 validatePhone={(value) => validatePhone(value) || undefined}
                 formatter="+91##########"
+                disabled={isSubmitting}
               />
 
-              <InformInput
-                type="number"
-                label="Salary"
-                name="salary"
-                placeholder="Enter salary"
-                validate={validateSalary}
-              />
+              {/* Department Select field */}
               <div className="mb-3">
                 <label className="form-label">Department</label>
                 <Select
                   field="department_id"
                   options={departmentOptions}
                   className="form-select"
+                  disabled={isSubmitting}
                 />
               </div>
+
+              {/* Designation Select field */}
               <div className="mb-3">
                 <label className="form-label">Designation</label>
                 <Select
                   field="designation_id"
                   options={designationOptions}
                   className="form-select"
+                  disabled={isSubmitting}
                 />
               </div>
+
+              {/* Employment Type Select field */}
               <div className="mb-3">
                 <label className="form-label">Employment Type</label>
                 <Select
                   field="employment_type_id"
                   options={employmentTypesOptions}
                   className="form-select"
+                  disabled={isSubmitting}
                 />
               </div>
-              <InformInput
-                type="text"
-                label="Address"
-                name="address"
-                placeholder="Enter address"
-                validate={validateAddress}
-                required
-              />
-              <InformInput
-                type="text"
-                label="City"
-                name="city"
-                placeholder="Enter city"
-                validate={validateCity}
-                required
-              />
-              <InformInput
-                type="text"
-                label="State"
-                name="state"
-                placeholder="Enter state"
-                validate={validateState}
-                required
-              />
-              <InformInput
-                type="text"
-                label="ZIP Code"
-                name="zip_code"
-                placeholder="Enter ZIP code"
-                validate={validateZipCode}
-                required
-              />
-              <InformInput
-                type="text"
-                label="Country"
-                name="country"
-                placeholder="Enter country"
-                validate={validateCountry}
-                required
-              />
-              <InformInput
-                type="text"
-                label="Bank Account Number"
-                name="bank_account_number"
-                placeholder="Enter bank account number"
-                validate={validateBankAccount}
-              />
-              <InformInput
-                type="text"
-                label="IFSC Code"
-                name="ifsc_code"
-                placeholder="Enter IFSC code"
-                validate={validateIfscCode}
-                required
-              />
-              {/* <InformInput
-                type="text"
-                label="Emergency Contact"
-                name="emergency_contact"
-                placeholder="Enter emergency contact"
-                validate={validateEmergencyContact}
-                required
-              /> */}
+
+              {/* Emergency Contact field */}
               <PhoneNumber
                 id="phoneNumber"
                 name="emergency_contact"
@@ -295,44 +227,43 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
                 placeholder="Enter your mobile number"
                 validatePhone={(value) => validatePhone(value) || undefined}
                 formatter="+91##########"
+                disabled={isSubmitting}
               />
-              <InformInput
-                type="date"
-                label="Date of Birth"
-                name="date_of_birth"
-                validate={validateDOB}
-                required
-              />
-              <InformInput
-                type="text"
-                label="Employee Code"
-                name="employee_code"
-                placeholder="Enter employee code"
-                validate={validateEmployeeCode}
-                required
-              />
+
+              {/* File Upload field */}
+              {employee.profile_picture && (
+                <div className="mb-3">
+                  <label className="form-label">Current Profile Picture</label>
+                  <div>
+                    <img
+                      src={
+                        typeof employee.profile_picture === "string"
+                          ? employee.profile_picture
+                          : URL.createObjectURL(employee.profile_picture)
+                      }
+                      alt="Current profile"
+                      style={{ maxWidth: "100%", maxHeight: "200px" }}
+                    />
+                  </div>
+                </div>
+              )}
               <Form.Group className="mb-3">
-                <Form.Label>Upload Profile Picture</Form.Label>
+                <Form.Label>Upload New Profile Picture</Form.Label>
                 <Form.Control
                   type="file"
                   name="profile_picture"
                   onChange={handleFileChange}
                   accept="image/*"
                   isInvalid={!!fileError}
+                  disabled={isSubmitting}
                 />
                 <Form.Control.Feedback type="invalid">
                   {fileError}
                 </Form.Control.Feedback>
               </Form.Group>
 
-              <InformInput
-                type="date"
-                label="Joining Date"
-                name="joining_date"
-                validate={validateJoiningDate}
-                required
-              />
-              <RadioGroup field="gender">
+              {/* Gender RadioGroup */}
+              <RadioGroup field="gender" disabled={isSubmitting}>
                 <label>
                   Male <Radio value="male" />
                 </label>
@@ -344,8 +275,26 @@ export default function EditModal({ isOpen, setIsOpen, employee, mutate }) {
                 </label>
               </RadioGroup>
 
-              <Button type="submit" className="mt-3 w-100">
-                Save Changes
+              <Button
+                type="submit"
+                className="mt-3 w-100"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  <>
+                    <Spinner
+                      as="span"
+                      animation="border"
+                      size="sm"
+                      role="status"
+                      aria-hidden="true"
+                      className="me-2"
+                    />
+                    Saving Changes...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </>
           )}
